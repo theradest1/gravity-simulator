@@ -5,8 +5,10 @@
 		"radius": 6.95e8,
 		"initialXPos": 0,
 		"initialYPos": 0,
+		"initialZPos": 0,
 		"initialXVel": 0,
 		"initialYVel": 0,
+		"initialZVel": 0,
 		"color": [255, 150, 0],
 		"relativeTo": "None",
 		"light": 5
@@ -17,8 +19,10 @@
 		"radius": 2430e3,
 		"initialXPos": 0,
 		"initialYPos": 57.9e9,
+		"initialZPos": 0,
 		"initialXVel": 52e3,
 		"initialYVel": 0,
+		"initialZVel": -1e4,
 		"color": [100, 100, 100],
 		"relativeTo": "Sun",
 		"light": 0
@@ -29,8 +33,10 @@
 		"radius": 6.378e6,
 		"initialXPos": 0,
 		"initialYPos": 1.496e11,
+		"initialZPos": 0,
 		"initialXVel": 3.05e4,
 		"initialYVel": 0,
+		"initialZVel": 1e4,
 		"color": [50, 50, 250],
 		"relativeTo": "Sun",
 		"light": 0

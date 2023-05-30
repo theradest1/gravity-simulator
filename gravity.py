@@ -19,8 +19,11 @@ green = (0, 255, 0)
 gravityConstant = 4 * 10**-11 #should be 6.67 * 10**-11 but it doesnt apply enough gravity ):
 xoffset = 0
 yoffset = 0
+zoffset = 0
 targetXoffset = 0
 targetYoffset = 0
+targetZoffset = 0
+zTargetScale = 20
 zoomSpeed = 1.2
 timeScale = 200000#5000 #dont go too high with this, it becomes unstable (the lower it is, the more physically correct it is)
 planetScale = 25
@@ -37,17 +40,20 @@ pygame.init()
 window = pygame.display.set_mode((windowWidth, windowHeight), pygame.RESIZABLE)
 
 class planet:
-	def __init__(self, mass, x, y, radius, xVel, yVel, name, color, light):
+	def __init__(self, mass, x, y, z, radius, xVel, yVel, zVel, name, color, light):
 		global gravityConstant
 		self.mass = mass
 		self.xpos = x
 		self.ypos = y
+		self.zpos = z
 		self.xvel = xVel
 		self.yvel = yVel
+		self.zvel = zVel
 		self.color = color
 		self.radius = radius
 		self.xaccel = 0
 		self.yaccel = 0
+		self.zaccel = 0
 		self.name = name
 		self.light = light
 		self.preCalculatedForce = gravityConstant * self.mass
@@ -58,16 +64,18 @@ class planet:
 	def applyVelocity(self, dt):
 		self.xpos += self.xvel * dt
 		self.ypos += self.yvel * dt
+		self.zpos += self.zvel * dt
 	
-	def addVelocity(self, xvel, yvel):
+	def addVelocity(self, xvel, yvel, zvel):
 		self.xvel += xvel
 		self.yvel += yvel
+		self.zvel += zvel
 	
 	def calculateGravity(self, dt):
 		for planet in planets:
 			#second statement gets rid of some bugs but significantly slows down the program
 			if planet != self:# and math.pow(math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2), .5) > self.radius + planet.radius:
-				distSquared = math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2)
+				distSquared = math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2) + math.pow(self.zpos - planet.zpos, 2)
 				
 				xAccel = planet.preCalculatedForce / distSquared * dt
 				if self.xpos < planet.xpos:
@@ -80,6 +88,12 @@ class planet:
 					self.yvel += yAccel
 				elif self.ypos > planet.ypos:
 					self.yvel -= yAccel
+				
+				zAccel = planet.preCalculatedForce / distSquared * dt
+				if self.zpos < planet.zpos:
+					self.zvel += zAccel
+				elif self.ypos > planet.ypos:
+					self.zvel -= zAccel
 
 	def drawDistances(self, scale, xoffset, yoffset):
 		global windowHeight, windowWidth
@@ -98,11 +112,13 @@ class planet:
 			
 
 				#self.yvel += yforce/self.mass
-	def draw(self, scale, xoffset, yoffset):
+	def draw(self, scale, xoffset, yoffset, zoffset):
 		global windowHeight, windowWidth, orbitTraceLength, distancePerOrbitSubdivide
 		xoffsetPos = clampNum((self.xpos - xoffset)/scale + windowWidth/2, 10000, -10000)
 		yoffsetPos = clampNum((self.ypos - yoffset)/scale + windowHeight/2, 10000, -10000) #clamps are beause the aa draw complains about it
-		planetDrawScale = clampLower(clampUpper(self.radius/scale*planetScale, 1000), 1)
+		zScale = (self.zpos - zoffset)/scale;
+		#print(zScale);
+		planetDrawScale = clampLower(clampUpper(self.radius/scale*planetScale + zScale, 1000), 1)
 		#segments = 20
 		#colorStep = 5
 		#if planetDrawScale > 1:
@@ -140,14 +156,16 @@ class planet:
 
 		#print(self.orbitLines)
 		pastLinePeice = (0, 0)
+		lineScale = 1
 		for linePeice in self.orbitLines:
 			startPos = (((linePeice[0] - xoffset)/scale + windowWidth/2), ((linePeice[1] - yoffset)/scale + windowHeight/2))
+			lineScale = clampNum(int((linePeice[2] - zoffset)/scale/2), 100, 1); 
 			if pastLinePeice != (0, 0):
-				pygame.draw.line(window, self.color, startPos, pastLinePeice)
+				pygame.draw.line(window, self.color, startPos, pastLinePeice, lineScale)
 				#pygame.gfxdraw.line(window, int(startPos[0]), int(startPos[1]), int(pastLinePeice[0]), int(pastLinePeice[1]), self.color)
 				#gfxdraw.line(window, int(startPos[0]), int(startPos[1]), int(pastLinePeice[0]), int(pastLinePeice[1]), self.color)
 			pastLinePeice = startPos
-		pygame.draw.line(window, self.color, (xoffsetPos, yoffsetPos), pastLinePeice)
+		pygame.draw.line(window, self.color, (xoffsetPos, yoffsetPos), pastLinePeice, lineScale)
 
 		#if self.name == "Earth":
 		#	print((xoffsetPos, yoffsetPos))
@@ -156,7 +174,7 @@ class planet:
 		return ((self.xpos - xoffset)/scale + windowWidth/2, (self.ypos - yoffset)/scale + windowHeight/2)
 	def addOrbitSub(self):
 		global orbitTraceLength
-		self.orbitLines.append((self.xpos, self.ypos))
+		self.orbitLines.append((self.xpos, self.ypos, self.zpos))
 		#trim orbit line
 		if len(self.orbitLines) > orbitTraceLength and orbitTraceLength != 0:
 			del self.orbitLines[0]
@@ -205,14 +223,26 @@ def checkEvents():
 			elif event.button == 5 and scale > 1:
 				targetScale /= zoomSpeed
 
-def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, drawFrameCount):
+def drawAll(scale, xoffset, yoffset, zoffset, day, calculationFrames, timeBetweenDraw, drawFrameCount):
 	global totalPlanets, selectedPlanet, planetScale
 	window.fill(black)
+	
+	#z sorting
+	notSorted = True
+	while notSorted:
+		notSorted = False
+		for planetIndex in range(len(planets) - 1):
+			if(planets[planetIndex].zpos > planets[planetIndex + 1].zpos):
+				notSorted = True
+				temp = planets[planetIndex]
+				planets[planetIndex] = planets[planetIndex + 1]
+				planets[planetIndex + 1] = temp
+
 	for planet in planets:
-		planet.draw(scale, xoffset, yoffset)
-		if planet == selectedPlanet:
-			planet.drawDistances(scale, xoffset, yoffset)
-	#text_to_screen(window, "Day: " + str(day), 1, 1, 25)
+		planet.draw(scale, xoffset, yoffset, zoffset)
+		#if planet == selectedPlanet:
+		#	planet.drawDistances(scale, xoffset, yoffset)
+	
 	text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, 1, 13)
 	text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, 14, 13)
 	text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, 27, 13)
@@ -222,13 +252,14 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 
 	#info
 	text_to_screen(window, selectedPlanet.name + ":", 1, 80, 20, white)
-	text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ") (m/s)", 1, 100, 16, white)
-	text_to_screen(window, "Speed: " + getScientificNotation(math.pow(math.pow(selectedPlanet.xvel, 2) + math.pow(selectedPlanet.yvel, 2), .5)) + " (m/s)", 1, 116, 16, white)
-	text_to_screen(window, "Mass: " + getScientificNotation(selectedPlanet.mass) + " (Kg)", 1, 132, 16, white)
-	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, 148, 16, white)
-	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, 164, 16, white)
-	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, 180, 16, white)
-	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, 196, 16, white)
+	text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ", " + getScientificNotation(selectedPlanet.zvel) + ") (m/s)", 1, 100, 16, white)
+	text_to_screen(window, "Position: (" + getScientificNotation(selectedPlanet.xpos) + ", " + getScientificNotation(selectedPlanet.ypos) + ", " + getScientificNotation(selectedPlanet.zpos) + ") (m/s)", 1, 116, 16, white)
+	text_to_screen(window, "Speed: " + getScientificNotation(math.pow(math.pow(selectedPlanet.xvel, 2) + math.pow(selectedPlanet.yvel, 2), .5)) + " (m/s)", 1, 132, 16, white)
+	text_to_screen(window, "Mass: " + getScientificNotation(selectedPlanet.mass) + " (Kg)", 1, 148, 16, white)
+	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, 164, 16, white)
+	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, 180, 16, white)
+	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, 196, 16, white)
+	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, 212, 16, white)
 
 	
 
@@ -251,18 +282,18 @@ def loadPlanets():
 	jsonData = json.load(jsonFile)
 	for planetInfo in jsonData:
 		if planetInfo['relativeTo'] == "None":
-			planets.append(planet(planetInfo['mass'], planetInfo['initialXPos'], planetInfo['initialYPos'], planetInfo['radius'], planetInfo['initialXVel'], planetInfo['initialYVel'], planetInfo['name'], (planetInfo['color'][0], planetInfo['color'][1], planetInfo['color'][2]), planetInfo['light']))
+			planets.append(planet(planetInfo['mass'], planetInfo['initialXPos'], planetInfo['initialYPos'], planetInfo['initialZPos'], planetInfo['radius'], planetInfo['initialXVel'], planetInfo['initialYVel'], planetInfo['initialZVel'], planetInfo['name'], (planetInfo['color'][0], planetInfo['color'][1], planetInfo['color'][2]), planetInfo['light']))
 		else:
 			for secondPlanet in jsonData:
 				if secondPlanet['name'] == planetInfo['relativeTo']:
 					relativePlanetInfo = secondPlanet
-			planets.append(planet(planetInfo['mass'], planetInfo['initialXPos'] + relativePlanetInfo['initialXPos'], planetInfo['initialYPos'] + relativePlanetInfo['initialYPos'], planetInfo['radius'], planetInfo['initialXVel'] + relativePlanetInfo['initialXVel'], planetInfo['initialYVel'] + relativePlanetInfo['initialYVel'], planetInfo['name'], (planetInfo['color'][0], planetInfo['color'][1], planetInfo['color'][2]), planetInfo['light']))
+			planets.append(planet(planetInfo['mass'], planetInfo['initialXPos'] + relativePlanetInfo['initialXPos'], planetInfo['initialYPos'] + relativePlanetInfo['initialYPos'], planetInfo['initialZPos'] + relativePlanetInfo['initialZPos'], planetInfo['radius'], planetInfo['initialXVel'] + relativePlanetInfo['initialXVel'], planetInfo['initialYVel'] + relativePlanetInfo['initialYVel'], planetInfo['initialZVel'] + relativePlanetInfo['initialZVel'], planetInfo['name'], (planetInfo['color'][0], planetInfo['color'][1], planetInfo['color'][2]), planetInfo['light']))
 
 def getScientificNotation(num):
     return "{:.2E}".format(Decimal(str(num)))
 
 def setFocusPlanet(mouseClickPosition):
-	global planets, selectedPlanet, targetXoffset, targetYoffset
+	global planets, selectedPlanet, targetXoffset, targetYoffset, targetZoffset
 	selectedPlanet = planets[0]
 	closestDist = distance(planets[0].getScreenPos(), mouseClickPosition)
 	for planet in planets:
@@ -283,7 +314,7 @@ offsetEase = 5
 
 #game loop
 pastTime = time.time()
-timeBetweenDraws = .1 #1/target fps
+timeBetweenDraws = .02 #1/target fps
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
 pastDrawTime = time.time()
 pastSecond = time.time()
@@ -315,13 +346,14 @@ while True:
 		scale += (targetScale - scale) * scaleEase * timeBetweenDraws
 		xoffset += (selectedPlanet.xpos - xoffset) * offsetEase * timeBetweenDraws
 		yoffset += (selectedPlanet.ypos - yoffset) * offsetEase * timeBetweenDraws
+		zoffset += (selectedPlanet.zpos - zoffset - scale * zTargetScale) * offsetEase * timeBetweenDraws
 		pastDrawTime = time.time()
 		#dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #convert seconds to days
 		#if orbitFramesCounter >= framesPerOrbitSubdivide:
 		#	orbitFramesCounter = 0
 		#	for planet in planets:
 		#		planet.addOrbitSub()
-		drawAll(scale, xoffset, yoffset, dayCounter, frameCount, timeBetweenDraws, currentFPS)
+		drawAll(scale, xoffset, yoffset, zoffset, dayCounter, frameCount, timeBetweenDraws, currentFPS)
 		#orbitFramesCounter += 1
 		drawFrameCount += 1
 		frameCount = 0
