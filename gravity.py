@@ -26,6 +26,7 @@ timeScale = 200000#5000 #dont go too high with this, it becomes unstable (the lo
 planetScale = 25
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
+
 #distancePerOrbitSubdivide = 3e9
 #velocityRatioOrbitSub = 1.5
 #velocityRatioOrbitSubInvert = 1/velocityRatioOrbitSub #dont change
@@ -64,7 +65,8 @@ class planet:
 	
 	def calculateGravity(self, dt):
 		for planet in planets:
-			if planet != self and math.pow(math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2), .5) > self.radius + planet.radius:
+			#second statement gets rid of some bugs but significantly slows down the program
+			if planet != self:# and math.pow(math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2), .5) > self.radius + planet.radius:
 				distSquared = math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2)
 				
 				xAccel = planet.preCalculatedForce / distSquared * dt
@@ -78,6 +80,7 @@ class planet:
 					self.yvel += yAccel
 				elif self.ypos > planet.ypos:
 					self.yvel -= yAccel
+
 	def drawDistances(self, scale, xoffset, yoffset):
 		global windowHeight, windowWidth
 		xoffsetPos = (self.xpos - xoffset)/scale + windowWidth/2
@@ -145,20 +148,6 @@ class planet:
 				#gfxdraw.line(window, int(startPos[0]), int(startPos[1]), int(pastLinePeice[0]), int(pastLinePeice[1]), self.color)
 			pastLinePeice = startPos
 		pygame.draw.line(window, self.color, (xoffsetPos, yoffsetPos), pastLinePeice)
-
-
-		#shading (might not finish shadow marching)
-		"""if self.star:
-			for planet in planets:
-				if planet != self:
-					magnitude = distance((self.xpos, self.ypos), (planet.xpos, planet.ypos))
-					slope = ((self.xpos - planet.xpos)/magnitude, (self.ypos - planet.ypos)/magnitude)
-					tangent = (-slope[1], slope[0])
-					if planet.name == "Mercury":
-						print(slope)
-					pygame.draw.line(window, self.color, pointToScreen(self.xpos + tangent[0] * self.radius * 50, self.ypos + tangent[1] * self.radius * 50), pointToScreen(planet.xpos + tangent[0] * planet.radius * 50, planet.ypos + tangent[1] * planet.radius * 50))
-					pygame.draw.line(window, self.color, pointToScreen(self.xpos - tangent[0] * self.radius * 50, self.ypos - tangent[1] * self.radius * 50), pointToScreen(planet.xpos - tangent[0] * planet.radius * 50, planet.ypos - tangent[1] * planet.radius * 50))
-		"""
 
 		#if self.name == "Earth":
 		#	print((xoffsetPos, yoffsetPos))
@@ -229,7 +218,7 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, 27, 13)
 	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, 40, 13)
 	text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, 53, 13)
-	text_to_screen(window, "(not physically accurate, some values had to be adjusted to work)", 1, 64, 10)
+	text_to_screen(window, "(not physically accurate, some values had to be slightly adjusted to work)", 1, 64, 10)
 
 	#info
 	text_to_screen(window, selectedPlanet.name + ":", 1, 80, 20, white)
@@ -239,6 +228,7 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, 148, 16, white)
 	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, 164, 16, white)
 	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, 180, 16, white)
+	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, 196, 16, white)
 
 	
 
@@ -293,7 +283,7 @@ offsetEase = 5
 
 #game loop
 pastTime = time.time()
-timeBetweenDraws = .0666 #1/target fps
+timeBetweenDraws = .1 #1/target fps
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
 pastDrawTime = time.time()
 pastSecond = time.time()
