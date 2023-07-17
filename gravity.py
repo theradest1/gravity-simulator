@@ -25,7 +25,7 @@ timeScale = 500000 #dont go too high (5000000 is max) with this, it becomes unst
 planetScale = 1
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
-targetFPS = 30
+targetFPS = 40
 drawDistances = False
 #timeBetweenDraws = .1 #1/target fps
 
@@ -125,40 +125,11 @@ class planet:
 		global windowHeight, windowWidth, orbitTraceLength, distancePerOrbitSubdivide
 		xoffsetPos = clampNum((self.xpos - xoffset)/scale + windowWidth/2, 10000, -10000)
 		yoffsetPos = clampNum((self.ypos - yoffset)/scale + windowHeight/2, 10000, -10000) #clamps are beause the aa draw complains about it
-		planetDrawScale = clampLower(clampUpper(self.radius/scale*planetScale, 1000), 1)
-		#segments = 20
-		#colorStep = 5
-		#if planetDrawScale > 1:
-		#	for i in range(int(planetDrawScale), int(planetDrawScale/2), -1):
-		#		colorChange = i
-		#		segmentColor = (clampUpper(self.color[0] + colorChange, 255), clampUpper(self.color[1] + colorChange, 255), clampUpper(self.color[2] + colorChange, 255))
-		#		pygame.draw.circle(window, segmentColor, (xoffsetPos, yoffsetPos), i)
-		#else:
-		
-		gfxdraw.aacircle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
-		gfxdraw.filled_circle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
-		#pygame.draw.circle(window, self.color, (xoffsetPos, yoffsetPos), planetDrawScale)
-
-		"""if self.light != 0:
-			dist = int(self.light * planetDrawScale)
-			step = 5
-			for radius in range(0, dist, step):
-				light = 255 - clampNum(radius/dist*255, 255, 0)
-				pygame.draw.circle(window, (light, light, light), (xoffsetPos, yoffsetPos), radius, step + 1)"""
-		#pygame.draw.line(window, (255, 0, 0), (xoffsetPos, yoffsetPos), (self.xvel/scale + xoffsetPos, self.yvel/scale + yoffsetPos))
+		planetDrawScale = clampUpper(self.radius/scale*planetScale, 1000)
+		if planetDrawScale > 1:
+			gfxdraw.aacircle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
+			gfxdraw.filled_circle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
 		text_to_screen(window, self.name, xoffsetPos + planetDrawScale, yoffsetPos - 12 - planetDrawScale, clampNum(int(planetDrawScale), 70, 10))
-		
-		#print orbit lines
-		#pastLinePeice = (0, 0)
-		
-		#if len(self.orbitLines) >= 3:
-		#	gfxdraw.bezier(window, getScaledLinePoints(self.orbitLines, scale, xoffset, yoffset) + [[xoffsetPos, yoffsetPos]], 2, self.color)
-		
-		
-		#velChange = [self.xvel/self.lastOrbitVel[0], self.yvel/self.lastOrbitVel[1]]
-		#if velChange[0] > velocityRatioOrbitSub or velChange[0] < velocityRatioOrbitSubInvert or velChange[1] > velocityRatioOrbitSub or velChange[1] < velocityRatioOrbitSubInvert:
-		#	self.addOrbitSub()
-		#self.lastOrbitVel = [self.xvel, self.yvel]
 
 
 		#print(self.orbitLines)
@@ -240,13 +211,13 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	sumulatorInfoIncrement = 15
 	text_to_screen(window, "Day: " + str(int(day)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 0, 13)
 	text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 1, 13)
-	text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
-	text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
-	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 4, 13)
-	text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 5, 13)
+	#text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
+	#text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
+	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
+	#text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
 
 	#info
-	planetInfoStartY = 115
+	planetInfoStartY = 50
 	increment = 17
 	text_to_screen(window, selectedPlanet.name + ":", 1, planetInfoStartY, 20, white)
 	text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ") (m/s)", 1, planetInfoStartY + increment * 1, 16, white)

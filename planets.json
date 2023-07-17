@@ -19,7 +19,7 @@
 		"initialYPos": 57900e6,
 		"initialXVel": 47400,
 		"initialYVel": 0,
-		"color": [250, 50, 50],
+		"color": [26, 26, 26],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -31,7 +31,7 @@
 		"initialYPos": 108200e6,
 		"initialXVel": 35000,
 		"initialYVel": 0,
-		"color": [50, 255, 50],
+		"color": [230, 230, 230],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -43,7 +43,7 @@
 		"initialYPos": 1.496e11,
 		"initialXVel": 2.98e4,
 		"initialYVel": 0,
-		"color": [50, 50, 250],
+		"color": [47, 106, 105],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -67,7 +67,7 @@
 		"initialYPos": 228.0e9,
 		"initialXVel": 24.1e3,
 		"initialYVel": 0,
-		"color": [150, 150, 150],
+		"color": [153, 61, 0],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -79,7 +79,7 @@
 		"initialYPos": 778.5e9,
 		"initialXVel": 13.1e3,
 		"initialYVel": 0,
-		"color": [150, 150, 150],
+		"color": [176, 127, 53],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -91,7 +91,7 @@
 		"initialYPos": 1432.0e9,
 		"initialXVel": 9.7e3,
 		"initialYVel": 0,
-		"color": [150, 150, 150],
+		"color": [176, 143, 54],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -103,7 +103,7 @@
 		"initialYPos": 2867.0e9,
 		"initialXVel": 6.8e3,
 		"initialYVel": 0,
-		"color": [150, 150, 150],
+		"color": [85, 128, 170],
 		"relativeTo": "Sun",
 		"light": 0
 	},
@@ -115,7 +115,7 @@
 		"initialYPos": 4515.0e9,
 		"initialXVel": 5.4e3,
 		"initialYVel": 0,
-		"color": [150, 150, 150],
+		"color": [54, 104, 150],
 		"relativeTo": "Sun",
 		"light": 0
 	}
