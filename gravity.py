@@ -237,7 +237,10 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 1, 13)
 	#text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
 	#text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
-	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
+	if paused:
+		text_to_screen(window, "Cycles/Second: 0", 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
+	else:
+		text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
 	#text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
 
 	#info
@@ -250,17 +253,14 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, planetInfoStartY + increment * 4, 16, white)
 	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, planetInfoStartY + increment * 5, 16, white)
 	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, planetInfoStartY + increment * 6, 16, white)
-	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, planetInfoStartY + increment * 7, 16, white)
+	if paused:
+		text_to_screen(window, "Paused", 1, planetInfoStartY + increment * 7, 16, white)
+	else:
+		text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, planetInfoStartY + increment * 7, 16, white)
 
-def calculatePhysics(dt): # me attempting to multiprossess this thang (doesnt work yet)
-	#processList = []
-	for planet in planets: #create processes
+def calculatePhysics(dt):
+	for planet in planets:
 		planet.calculateGravity(dt)
-		#processList.append(multiprocessing.Process(target=planet.calculateGravity, args=(dt, )))
-	#for process in processList: #start
-	#	process.start()
-	#for process in processList: #wait
-	#	process.join()
 
 	for planet in planets:
 		planet.applyVelocity(dt)
@@ -314,11 +314,12 @@ paused = False
 
 #main loop
 while True:
-	if (frameCount <= calculationCycleLimit - 1 or calculationCycleLimit == 0) and not paused: #physics
+	if (frameCount <= calculationCycleLimit - 1 or calculationCycleLimit == 0): #physics
 		dt = time.time() - pastTime
 		pastTime = time.time()
 		frameCount += 1
-		calculatePhysics(dt * timeScale)
+		if not paused:
+			calculatePhysics(dt * timeScale)
 
 	if time.time() - pastDrawTime >= timeBetweenDraws: #draw everything
 		main_dialog.update()
