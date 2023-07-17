@@ -1,38 +1,63 @@
-import pygame
 import time
 import random
 import math
-import multiprocessing
-import json
 from decimal import Decimal
+import json
+import pygame
 from pygame import gfxdraw
+import tkinter as tk
+from tkinter import ttk
+import sys
 
 planets = []
-
 black = (0, 0, 0)
 white = (255, 255, 255)
 green = (0, 255, 0)
 
 #all data gotten from NASA
-#planets are not to scale (they couldn't be seen if they were)
 gravityConstant = 6.673 * 10**-11 #should be 6.67 * 10**-11 but it doesnt apply enough gravity ):
 xoffset = 0
 yoffset = 0
 targetXoffset = 0
 targetYoffset = 0
+
+#settings
 zoomSpeed = 1.4
-timeScale = 500000 #dont go too high (5000000 is max) with this, it becomes unstable (the lower it is, the more physically correct it is)
+timeScale = 250000 #dont go too high (5000000 is max) with this, it becomes unstable (the lower it is, the more physically correct it is)
 planetScale = 1
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
 targetFPS = 40
 drawDistances = False
-#timeBetweenDraws = .1 #1/target fps
+scaleEase = 10
+offsetEase = 5
+calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
 
+#settings functions:
+def quit_callback():
+	global Done
+	Done = True
+
+def pauseSimulation(event):
+    global paused
+    paused = not paused
+
+
+#pygame initialize
 windowWidth = 800
 windowHeight = 800
 pygame.init()
 window = pygame.display.set_mode((windowWidth, windowHeight), pygame.RESIZABLE)
+
+#settings window:
+tkWindow = tk.Tk()
+tkWindow.protocol("WM_DELETE_WINDOW", quit_callback)
+main_dialog =  tk.Frame(tkWindow)
+main_dialog.pack()
+
+button = ttk.Button(tkWindow, text="Pause")
+button.bind("<ButtonPress-1>", pauseSimulation)
+button.pack(pady=10)
 
 def normalizeVector(vector):
     x, y = vector
@@ -50,7 +75,6 @@ def calculateForceVector(force, coord1, coord2):
     #get force vector
     forceVector = (force * normalizedVector[0], force * normalizedVector[1])
     return forceVector
-
 class planet:
 	def __init__(self, mass, x, y, radius, xVel, yVel, name, color, light):
 		global gravityConstant
@@ -228,8 +252,6 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, planetInfoStartY + increment * 6, 16, white)
 	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, planetInfoStartY + increment * 7, 16, white)
 
-	
-
 def calculatePhysics(dt): # me attempting to multiprossess this thang (doesnt work yet)
 	#processList = []
 	for planet in planets: #create processes
@@ -270,18 +292,14 @@ def setFocusPlanet(mouseClickPosition):
 
 def distance(point1, point2):
     return math.pow(math.pow(point1[0] - point2[0], 2) + math.pow(point1[1] - point2[1], 2), .5)
-        
+
+#loading planets and a few variables before start
 loadPlanets()
 totalPlanets = len(planets)
 selectedPlanet = planets[0]
 scale = planets[0].radius
 targetScale = scale
-scaleEase = 10
-offsetEase = 5
-
-#game loop
 pastTime = time.time()
-calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
 pastDrawTime = time.time()
 pastSecond = time.time()
 pastOrbitSub = time.time()
@@ -292,39 +310,41 @@ dayCounter = 0
 orbitFramesCounter = 0
 currentFPS = 0
 timeBetweenDraws = 1/targetFPS
+paused = False
 
+#main loop
 while True:
-	if frameCount <= calculationCycleLimit - 1 or calculationCycleLimit == 0:
+	if (frameCount <= calculationCycleLimit - 1 or calculationCycleLimit == 0) and not paused: #physics
 		dt = time.time() - pastTime
 		pastTime = time.time()
 		frameCount += 1
 		calculatePhysics(dt * timeScale)
 
-	if time.time() - pastDrawTime >= timeBetweenDraws:
-		#print(scale)
-		checkEvents()
-		if time.time() - pastSecond >= 1:
+	if time.time() - pastDrawTime >= timeBetweenDraws: #draw everything
+		main_dialog.update()
+		checkEvents() #for resize, close windows, and interaction
+		if time.time() - pastSecond >= 1: #getting fps
 			pastSecond = time.time()
 			currentFPS = drawFrameCount
 			drawFrameCount = 0
-		if time.time() - pastOrbitSub >= timePerOrbitSubdivide:
+
+		if time.time() - pastOrbitSub >= timePerOrbitSubdivide: #orbit markings
 			pastOrbitSub = time.time()
 			for planet in planets:
 				planet.addOrbitSub()
+
+		#cam moving
 		scale += (targetScale - scale) * scaleEase * timeBetweenDraws
 		xoffset += (selectedPlanet.xpos - xoffset) * offsetEase * timeBetweenDraws
 		yoffset += (selectedPlanet.ypos - yoffset) * offsetEase * timeBetweenDraws
+
 		pastDrawTime = time.time()
-		dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #convert seconds to days
-		#if orbitFramesCounter >= framesPerOrbitSubdivide:
-		#	orbitFramesCounter = 0
-		#	for planet in planets:
-		#		planet.addOrbitSub()
+		if not paused:
+			dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #keeping track of days
 		drawAll(scale, xoffset, yoffset, dayCounter, frameCount, timeBetweenDraws, currentFPS)
-		#orbitFramesCounter += 1
 		drawFrameCount += 1
 		frameCount = 0
-		pygame.display.flip()
+		pygame.display.flip() #update display
 
 
 #some cool things:
