@@ -16,25 +16,41 @@ green = (0, 255, 0)
 #all data gotten from NASA
 #only current problem is that the gravity constant isnt right
 #planets are not to scale (they couldn't be seen if they were)
-gravityConstant = 4 * 10**-11 #should be 6.67 * 10**-11 but it doesnt apply enough gravity ):
+gravityConstant = 6.673 * 10**-11 #should be 6.67 * 10**-11 but it doesnt apply enough gravity ):
 xoffset = 0
 yoffset = 0
 targetXoffset = 0
 targetYoffset = 0
-zoomSpeed = 1.2
-timeScale = 200000#5000 #dont go too high with this, it becomes unstable (the lower it is, the more physically correct it is)
+zoomSpeed = 1.4
+timeScale = 5000000 #dont go too high (5000000 is max) with this, it becomes unstable (the lower it is, the more physically correct it is)
 planetScale = 25
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
-
-#distancePerOrbitSubdivide = 3e9
-#velocityRatioOrbitSub = 1.5
-#velocityRatioOrbitSubInvert = 1/velocityRatioOrbitSub #dont change
+targetFPS = 30
+drawDistances = False
+#timeBetweenDraws = .1 #1/target fps
 
 windowWidth = 800
 windowHeight = 800
 pygame.init()
 window = pygame.display.set_mode((windowWidth, windowHeight), pygame.RESIZABLE)
+
+def normalizeVector(vector):
+    x, y = vector
+    magnitude = math.sqrt(x ** 2 + y ** 2)
+    normalizedVector = [x / magnitude, y / magnitude]
+    return normalizedVector
+
+def calculateForceVector(force, coord1, coord2):
+    x1, y1 = coord1
+    x2, y2 = coord2
+    
+    #get normalized vector
+    direction = (x1 - x2, y1 - y2)
+    normalizedVector = normalizeVector(direction)
+    #get force vector
+    forceVector = (force * normalizedVector[0], force * normalizedVector[1])
+    return forceVector
 
 class planet:
 	def __init__(self, mass, x, y, radius, xVel, yVel, name, color, light):
@@ -50,9 +66,9 @@ class planet:
 		self.yaccel = 0
 		self.name = name
 		self.light = light
-		self.preCalculatedForce = gravityConstant * self.mass
 		self.orbitLines = []
 		self.lastOrbitVel = [1, 1]
+		self.preCalculatedForce = gravityConstant * self.mass
 			
 	def applyVelocity(self, dt):
 		self.xpos += self.xvel * dt
@@ -66,9 +82,18 @@ class planet:
 		for planet in planets:
 			#second statement gets rid of some bugs but significantly slows down the program
 			if planet != self:# and math.pow(math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2), .5) > self.radius + planet.radius:
-				distSquared = math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2)
+				#distSquared = math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2)
 				
-				xAccel = planet.preCalculatedForce / distSquared * dt
+				#xAccel = planet.preCalculatedForce / (self.mass * distSquared) * dt
+				#yAccel = planet.preCalculatedForce / (self.mass * distSquared) * dt
+				#print(math.pow(self.ypos - planet.ypos, 2))
+				#force = (gravityConstant * planet.mass) / (math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2))
+				accell = planet.preCalculatedForce / (math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2))
+				#print(self.name, ": ", force)
+				xAccel, yAccel = calculateForceVector(accell, (planet.xpos, planet.ypos), (self.xpos, self.ypos))
+				self.xvel += xAccel * dt
+				self.yvel += yAccel * dt
+				"""xAccel = planet.preCalculatedForce / distSquared * dt
 				if self.xpos < planet.xpos:
 					self.xvel += xAccel
 				elif self.xpos > planet.xpos:
@@ -78,7 +103,7 @@ class planet:
 				if self.ypos < planet.ypos:
 					self.yvel += yAccel
 				elif self.ypos > planet.ypos:
-					self.yvel -= yAccel
+					self.yvel -= yAccel"""
 
 	def drawDistances(self, scale, xoffset, yoffset):
 		global windowHeight, windowWidth
@@ -209,25 +234,30 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	window.fill(black)
 	for planet in planets:
 		planet.draw(scale, xoffset, yoffset)
-		if planet == selectedPlanet:
+		if planet == selectedPlanet and drawDistances:
 			planet.drawDistances(scale, xoffset, yoffset)
-	#text_to_screen(window, "Day: " + str(day), 1, 1, 25)
-	text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, 1, 13)
-	text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, 14, 13)
-	text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, 27, 13)
-	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, 40, 13)
-	text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, 53, 13)
-	text_to_screen(window, "(not physically accurate, some values had to be slightly adjusted to work)", 1, 64, 10)
+
+	simulatorInfoStartY = 1
+	sumulatorInfoIncrement = 15
+	text_to_screen(window, "Day: " + str(int(day)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 0, 13)
+	text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 1, 13)
+	text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
+	text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
+	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 4, 13)
+	text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 5, 13)
+	text_to_screen(window, "(not physically accurate, some values had to be slightly adjusted to work)", 1, simulatorInfoStartY + sumulatorInfoIncrement * 6, 10)
 
 	#info
-	text_to_screen(window, selectedPlanet.name + ":", 1, 80, 20, white)
-	text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ") (m/s)", 1, 100, 16, white)
-	text_to_screen(window, "Speed: " + getScientificNotation(math.pow(math.pow(selectedPlanet.xvel, 2) + math.pow(selectedPlanet.yvel, 2), .5)) + " (m/s)", 1, 116, 16, white)
-	text_to_screen(window, "Mass: " + getScientificNotation(selectedPlanet.mass) + " (Kg)", 1, 132, 16, white)
-	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, 148, 16, white)
-	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, 164, 16, white)
-	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, 180, 16, white)
-	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, 196, 16, white)
+	planetInfoStartY = 115
+	increment = 17
+	text_to_screen(window, selectedPlanet.name + ":", 1, planetInfoStartY, 20, white)
+	text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ") (m/s)", 1, planetInfoStartY + increment * 1, 16, white)
+	text_to_screen(window, "Speed: " + getScientificNotation(math.pow(math.pow(selectedPlanet.xvel, 2) + math.pow(selectedPlanet.yvel, 2), .5)) + " (m/s)", 1, planetInfoStartY + increment * 2, 16, white)
+	text_to_screen(window, "Mass: " + getScientificNotation(selectedPlanet.mass) + " (Kg)", 1, planetInfoStartY + increment * 3, 16, white)
+	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, planetInfoStartY + increment * 4, 16, white)
+	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, planetInfoStartY + increment * 5, 16, white)
+	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, planetInfoStartY + increment * 6, 16, white)
+	text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, planetInfoStartY + increment * 7, 16, white)
 
 	
 
@@ -282,7 +312,6 @@ offsetEase = 5
 
 #game loop
 pastTime = time.time()
-timeBetweenDraws = .033 #1/target fps
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
 pastDrawTime = time.time()
 pastSecond = time.time()
@@ -293,6 +322,8 @@ frameCount = 0
 dayCounter = 0
 orbitFramesCounter = 0
 currentFPS = 0
+timeBetweenDraws = 1/targetFPS
+
 while True:
 	if frameCount <= calculationCycleLimit - 1 or calculationCycleLimit == 0:
 		dt = time.time() - pastTime
@@ -315,7 +346,7 @@ while True:
 		xoffset += (selectedPlanet.xpos - xoffset) * offsetEase * timeBetweenDraws
 		yoffset += (selectedPlanet.ypos - yoffset) * offsetEase * timeBetweenDraws
 		pastDrawTime = time.time()
-		#dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #convert seconds to days
+		dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #convert seconds to days
 		#if orbitFramesCounter >= framesPerOrbitSubdivide:
 		#	orbitFramesCounter = 0
 		#	for planet in planets:
@@ -402,5 +433,35 @@ while True:
 		"initialYVel": -8e4,
 		"color": [50, 50, 250],
 		"relativeTo": "Sun_2"
+	}
+"""
+
+"""mr ham
+	{
+		"name": "Quintin",
+		"mass": 60,
+		"radius": 2,
+		"initialXPos": 6.38e6,
+		"initialYPos": 0,
+		"initialXVel": 0,
+		"initialYVel": 0,
+		"color": [50, 50, 250],
+		"relativeTo": "Earth",
+		"light": 0
+	}
+"""
+
+"""pluto
+	{
+		"name": "Pluto",
+		"mass": 0.013e24,
+		"radius": 1188000,
+		"initialXPos": 0,
+		"initialYPos": 5906.4e9,
+		"initialXVel": 4.7e3,
+		"initialYVel": 0,
+		"color": [150, 150, 150],
+		"relativeTo": "Sun",
+		"light": 0
 	}
 """
