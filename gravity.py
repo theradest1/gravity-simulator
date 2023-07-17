@@ -14,7 +14,6 @@ white = (255, 255, 255)
 green = (0, 255, 0)
 
 #all data gotten from NASA
-#only current problem is that the gravity constant isnt right
 #planets are not to scale (they couldn't be seen if they were)
 gravityConstant = 6.673 * 10**-11 #should be 6.67 * 10**-11 but it doesnt apply enough gravity ):
 xoffset = 0
@@ -22,8 +21,8 @@ yoffset = 0
 targetXoffset = 0
 targetYoffset = 0
 zoomSpeed = 1.4
-timeScale = 5000000 #dont go too high (5000000 is max) with this, it becomes unstable (the lower it is, the more physically correct it is)
-planetScale = 25
+timeScale = 500000 #dont go too high (5000000 is max) with this, it becomes unstable (the lower it is, the more physically correct it is)
+planetScale = 1
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
 targetFPS = 30
@@ -245,7 +244,6 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 	text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
 	text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 4, 13)
 	text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 5, 13)
-	text_to_screen(window, "(not physically accurate, some values had to be slightly adjusted to work)", 1, simulatorInfoStartY + sumulatorInfoIncrement * 6, 10)
 
 	#info
 	planetInfoStartY = 115
@@ -304,8 +302,8 @@ def distance(point1, point2):
         
 loadPlanets()
 totalPlanets = len(planets)
-selectedPlanet = planets[len(planets) - 1]
-scale = planets[len(planets) - 1].ypos/200
+selectedPlanet = planets[0]
+scale = planets[0].radius
 targetScale = scale
 scaleEase = 10
 offsetEase = 5
