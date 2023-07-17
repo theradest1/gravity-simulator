@@ -52,7 +52,6 @@ class planet:
 		self.light = light
 		self.preCalculatedForce = gravityConstant * self.mass
 		self.orbitLines = []
-		#self.distanceFromLastOrbitSubdivide = 0
 		self.lastOrbitVel = [1, 1]
 			
 	def applyVelocity(self, dt):
@@ -232,7 +231,7 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 
 	
 
-def calculatePhysics(dt): # me attempting to multiprossess this bish (fail lolz)
+def calculatePhysics(dt): # me attempting to multiprossess this thang (doesnt work yet)
 	#processList = []
 	for planet in planets: #create processes
 		planet.calculateGravity(dt)
@@ -283,7 +282,7 @@ offsetEase = 5
 
 #game loop
 pastTime = time.time()
-timeBetweenDraws = .1 #1/target fps
+timeBetweenDraws = .033 #1/target fps
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
 pastDrawTime = time.time()
 pastSecond = time.time()
