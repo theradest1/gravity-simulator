@@ -19,6 +19,7 @@ green = (0, 255, 0)
 
 #all data gotten from NASA
 gravityConstant = 6.673 * 10**-11 #should be 6.67 * 10**-11 but it doesnt apply enough gravity ):
+
 xoffset = 0
 yoffset = 0
 targetXoffset = 0
@@ -30,11 +31,11 @@ timeScale = 250000 #dont go too high with this, it becomes unstable (the lower i
 planetScale = 1
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
-targetFPS = 30
+targetFPS = 15
 drawDistances = False
 planetInfo = True
 key = True
-debug = True
+debug = False
 scaleEase = 10
 offsetEase = 5
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
@@ -67,10 +68,10 @@ def toggleDebug():
     debug = not debug
 
 #pygame initialize
-windowWidth = 1920
-windowHeight = 1080
 pygame.init()
-window = pygame.display.set_mode((windowWidth, windowHeight), pygame.FULLSCREEN)
+window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+windowWidth = window.get_width()
+windowHeight = window.get_height()
 pygame.display.set_caption('Gravity Simulator')
 icon = pygame.image.load('icon.jpg')
 pygame.display.set_icon(icon)
@@ -79,10 +80,12 @@ pygame.display.set_icon(icon)
 objectScaleSlider = Slider(window, 10, windowHeight - 330, 400, 20, min=1, max=50, step=1, handleColour=(150, 150, 150))
 objectScaleOutput = TextBox(window, 425, windowHeight - 340, 175, 40, fontSize=30)
 objectScaleOutput.disable()
+objectScaleSlider.setValue(25)
 
 timeScaleSlider = Slider(window, 10, windowHeight - 380, 400, 20, min=1, max=3000000, step=1, handleColour=(150, 150, 150))
 timeScaleOutput = TextBox(window, 425, windowHeight - 390, 175, 40, fontSize=30)
 timeScaleOutput.disable()
+timeScaleSlider.setValue(4.5e5)
 
 yPos = windowHeight - 275
 pauseButton = Button(window, 0, yPos, 100, 50, text="Pause", fontSize=20, margin=5, onClick=pauseSimulation)
@@ -222,7 +225,7 @@ def checkEvents():
 				targetScale /= zoomSpeed
     
     #settings
-	objectScaleOutput.setText("Scale: " + str(objectScaleSlider.getValue()))
+	objectScaleOutput.setText("Scale: " + str(objectScaleSlider.getValue()) + "X")
 	timeScaleOutput.setText("Time: " + getScientificNotation(timeScaleSlider.getValue()) + "X")
 	changeScale(objectScaleSlider.getValue())
 	changeTimeScale(timeScaleSlider.getValue())
@@ -332,6 +335,7 @@ yearCounter = 0
 orbitFramesCounter = 0
 currentFPS = 0
 timeBetweenDraws = 1/targetFPS
+startPauseTimer = 1 #an initial pause so that there aren't any freezes in the start that mess things up
 
 #main loop
 while True:
@@ -339,8 +343,13 @@ while True:
 		dt = time.time() - pastTime
 		pastTime = time.time()
 		frameCount += 1
-		if not paused:
+		startPauseTimer -= dt
+		if not paused and startPauseTimer < 0:
 			calculatePhysics(dt * timeScale)
+			dayCounter += (dt * timeScale)/(24 * 60 * 60) #keeping track of days
+			if dayCounter >= 365:
+				dayCounter = 0
+				yearCounter += 1
 
 	if time.time() - pastDrawTime >= timeBetweenDraws: #draw everything
 		if time.time() - pastSecond >= 1: #getting fps
@@ -359,12 +368,9 @@ while True:
 		yoffset += (selectedPlanet.ypos - yoffset) * offsetEase * timeBetweenDraws
 
 		pastDrawTime = time.time()
-		if not paused:
-			dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #keeping track of days
-			if dayCounter >= 365:
-				dayCounter = 0
-				yearCounter += 1
 		drawAll(scale, xoffset, yoffset, dayCounter, yearCounter, frameCount, timeBetweenDraws, currentFPS)
+		if startPauseTimer > 0:
+			text_to_screen(window, "Loading...", windowWidth/2, windowHeight/2, 30, white)
 		checkEvents() #for resize, close windows, and interaction
 		drawFrameCount += 1
 		frameCount = 0
