@@ -7,6 +7,11 @@ import json
 from decimal import Decimal
 from pygame import gfxdraw
 
+import OpenGL
+import OpenGL.GL
+import OpenGL.GLUT
+import OpenGL.GLU
+
 planets = []
 
 black = (0, 0, 0)
