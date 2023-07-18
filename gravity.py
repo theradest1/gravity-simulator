@@ -8,9 +8,6 @@ from pygame_widgets.slider import Slider
 from pygame_widgets.textbox import TextBox
 from pygame_widgets.button import Button
 from pygame import gfxdraw
-#import tkinter as tk
-#from tkinter import ttk
-#import sys
 
 planets = []
 black = (0, 0, 0)
@@ -56,9 +53,6 @@ def changeScale(value):
 def changeTimeScale(value):
     global timeScale
     timeScale = round(float(value))
-def changeTargetFPS(value):
-    global timeBetweenDraws
-    timeBetweenDraws = 1/round(float(value))
 def toggleDistances():
     global drawDistances
     drawDistances = not drawDistances
@@ -81,7 +75,7 @@ pygame.display.set_caption('Gravity Simulator')
 icon = pygame.image.load('icon.jpg')
 pygame.display.set_icon(icon)
 
-#settings
+#settings gui
 objectScaleSlider = Slider(window, 10, windowHeight - 330, 400, 20, min=1, max=50, step=1, handleColour=(150, 150, 150))
 objectScaleOutput = TextBox(window, 425, windowHeight - 340, 175, 40, fontSize=30)
 objectScaleOutput.disable()
@@ -196,30 +190,11 @@ class planet:
 	
 	def calculateGravity(self, dt):
 		for planet in planets:
-			#second statement gets rid of some bugs but significantly slows down the program
-			if planet != self:# and math.pow(math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2), .5) > self.radius + planet.radius:
-				#distSquared = math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2)
-				
-				#xAccel = planet.preCalculatedForce / (self.mass * distSquared) * dt
-				#yAccel = planet.preCalculatedForce / (self.mass * distSquared) * dt
-				#print(math.pow(self.ypos - planet.ypos, 2))
-				#force = (gravityConstant * planet.mass) / (math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2))
+			if planet != self:
 				accell = planet.preCalculatedForce / (math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2))
-				#print(self.name, ": ", force)
 				xAccel, yAccel = calculateForceVector(accell, (planet.xpos, planet.ypos), (self.xpos, self.ypos))
 				self.xvel += xAccel * dt
 				self.yvel += yAccel * dt
-				"""xAccel = planet.preCalculatedForce / distSquared * dt
-				if self.xpos < planet.xpos:
-					self.xvel += xAccel
-				elif self.xpos > planet.xpos:
-					self.xvel -= xAccel
-				
-				yAccel = planet.preCalculatedForce / distSquared * dt
-				if self.ypos < planet.ypos:
-					self.yvel += yAccel
-				elif self.ypos > planet.ypos:
-					self.yvel -= yAccel"""
 
 	def drawDistances(self, scale, xoffset, yoffset):
 		global windowHeight, windowWidth
@@ -235,36 +210,24 @@ class planet:
 				forceToShow = "{:.2E}".format(Decimal(str(accel))) + "(m/s^2)"
 				text_to_screen(window, distanceToShow, (xoffsetPos + xoffsetPos_2)/2, (yoffsetPos + yoffsetPos_2)/2, 12)
 				text_to_screen(window, forceToShow, (xoffsetPos + xoffsetPos_2)/2, (yoffsetPos + yoffsetPos_2)/2 + 12, 12)
-			
-
-				#self.yvel += yforce/self.mass
 	def draw(self, scale, xoffset, yoffset):
 		global windowHeight, windowWidth, orbitTraceLength, distancePerOrbitSubdivide
-		#print(self.orbitLines)
 		xoffsetPos = clampNum((self.xpos - xoffset)/scale + windowWidth/2, 10000, -10000)
 		yoffsetPos = clampNum((self.ypos - yoffset)/scale + windowHeight/2, 10000, -10000) #clamps are beause the aa draw complains about it
-		
+
 		pastLinePeice = (0, 0)
 		for linePeice in self.orbitLines:
 			startPos = (((linePeice[0] - xoffset)/scale + windowWidth/2), ((linePeice[1] - yoffset)/scale + windowHeight/2))
 			if pastLinePeice != (0, 0):
 				pygame.draw.line(window, self.color, startPos, pastLinePeice)
-				#pygame.gfxdraw.line(window, int(startPos[0]), int(startPos[1]), int(pastLinePeice[0]), int(pastLinePeice[1]), self.color)
-				#gfxdraw.line(window, int(startPos[0]), int(startPos[1]), int(pastLinePeice[0]), int(pastLinePeice[1]), self.color)
 			pastLinePeice = startPos
 		pygame.draw.line(window, self.color, (xoffsetPos, yoffsetPos), pastLinePeice)
 
-		
-		planetDrawScale = clampUpper(self.radius/scale*planetScale, 1000)
+		planetDrawScale = min(self.radius/scale*planetScale, 1000)
 		if planetDrawScale > 1:
 			gfxdraw.aacircle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
 			gfxdraw.filled_circle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
 		text_to_screen(window, self.name, xoffsetPos + planetDrawScale, yoffsetPos - 12 - planetDrawScale, clampNum(int(planetDrawScale), 70, 10))
-
-
-
-		#if self.name == "Earth":
-		#	print((xoffsetPos, yoffsetPos))
 	def getScreenPos(self):
 		global windowWidth, windowHeight
 		return ((self.xpos - xoffset)/scale + windowWidth/2, (self.ypos - yoffset)/scale + windowHeight/2)
@@ -274,14 +237,12 @@ class planet:
 		#trim orbit line
 		if len(self.orbitLines) > orbitTraceLength and orbitTraceLength != 0:
 			del self.orbitLines[0]
-		#print(len(self.orbitLines))
 
 def getScaledLinePoints(points, scale, xoffset, yoffset):
     newList = []
     for point in points:
         scaledPoint = [((point[0] - xoffset)/scale + windowWidth/2), ((point[1] - yoffset)/scale + windowHeight/2)]
         newList.append(scaledPoint)
-        #pygame.draw.circle(window, white, (scaledPoint[0], scaledPoint[1]), 2)
     return newList
 
 def pointToScreen(xpos, ypos):
@@ -290,12 +251,6 @@ def pointToScreen(xpos, ypos):
 
 def clampNum(num, upper, lower):
 	return max(min(num, upper), lower)
-
-def clampLower(num, lower):
-	return max(num, lower)
-
-def clampUpper(num, upper):
-	return min(num, upper)
 
 def text_to_screen(screen, text, x, y, size=50, color=(200, 000, 000), font_type=pygame.font.get_default_font()):
 	text = str(text)
@@ -319,12 +274,12 @@ def checkEvents():
 				targetScale *= zoomSpeed
 			elif event.button == 5 and scale > 1:
 				targetScale /= zoomSpeed
+    
+    #settings
 	objectScaleOutput.setText("Scale: " + str(objectScaleSlider.getValue()))
 	timeScaleOutput.setText("Time: " + getScientificNotation(timeScaleSlider.getValue()) + "X")
-
 	changeScale(objectScaleSlider.getValue())
 	changeTimeScale(timeScaleSlider.getValue())
-	
 	pygame_widgets.update(events)
 	pygame.display.update()
 
@@ -442,7 +397,6 @@ while True:
 			calculatePhysics(dt * timeScale)
 
 	if time.time() - pastDrawTime >= timeBetweenDraws: #draw everything
-		#main_dialog.update()
 		if time.time() - pastSecond >= 1: #getting fps
 			pastSecond = time.time()
 			currentFPS = drawFrameCount
@@ -470,49 +424,6 @@ while True:
 		frameCount = 0
 
 		pygame.display.flip() #update display
-
-
-#some cool things:
-""" earth, sun, and moon
-[
-	{
-		"name": "Sun",
-		"mass": 1.9885e30,
-		"radius": 6.95e8,
-		"initialXPos": 0,
-		"initialYPos": 0,
-		"initialXVel": 0,
-		"initialYVel": 0,
-		"color": [255, 150, 0],
-		"relativeTo": "None",
-		"light": 5
-	},
-	{
-		"name": "Mercury",
-		"mass": 3.3e23,
-		"radius": 2430e3,
-		"initialXPos": 0,
-		"initialYPos": 57.9e9,
-		"initialXVel": 52e3,
-		"initialYVel": 0,
-		"color": [100, 100, 100],
-		"relativeTo": "Sun",
-		"light": 0
-	},
-	{
-		"name": "Earth",
-		"mass": 5.97e24,
-		"radius": 6.378e6,
-		"initialXPos": 0,
-		"initialYPos": 1.496e11,
-		"initialXVel": 3.05e4,
-		"initialYVel": 0,
-		"color": [50, 50, 250],
-		"relativeTo": "Sun",
-		"light": 0
-	}
-]
-"""
 
 """ double sun dobble
 	{
@@ -547,21 +458,6 @@ while True:
 		"initialYVel": -8e4,
 		"color": [50, 50, 250],
 		"relativeTo": "Sun_2"
-	}
-"""
-
-"""mr ham
-	{
-		"name": "Quintin",
-		"mass": 60,
-		"radius": 2,
-		"initialXPos": 6.38e6,
-		"initialYPos": 0,
-		"initialXVel": 0,
-		"initialYVel": 0,
-		"color": [50, 50, 250],
-		"relativeTo": "Earth",
-		"light": 0
 	}
 """
 
