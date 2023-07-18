@@ -1,13 +1,16 @@
 import time
-import random
 import math
 from decimal import Decimal
 import json
 import pygame
+import pygame_widgets
+from pygame_widgets.slider import Slider
+from pygame_widgets.textbox import TextBox
+from pygame_widgets.button import Button
 from pygame import gfxdraw
-import tkinter as tk
-from tkinter import ttk
-import sys
+#import tkinter as tk
+#from tkinter import ttk
+#import sys
 
 planets = []
 black = (0, 0, 0)
@@ -38,12 +41,13 @@ debug = True
 scaleEase = 10
 offsetEase = 5
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
+paused = False
 
 #settings functions:
 def quit_callback():
 	global Done
 	Done = True
-def pauseSimulation(event):
+def pauseSimulation():
     global paused
     paused = not paused
 def changeScale(value):
@@ -55,28 +59,98 @@ def changeTimeScale(value):
 def changeTargetFPS(value):
     global timeBetweenDraws
     timeBetweenDraws = 1/round(float(value))
-def toggleDistances(event):
+def toggleDistances():
     global drawDistances
     drawDistances = not drawDistances
-def togglePlanetInfo(event):
+def togglePlanetInfo():
     global planetInfo
     planetInfo = not planetInfo
-def toggleKey(event):
+def toggleKey():
     global key
     key = not key
-def toggleDebug(event):
+def toggleDebug():
     global debug
     debug = not debug
 #pygame initialize
-windowWidth = 800
-windowHeight = 800
+windowWidth = 1920
+windowHeight = 1080
 pygame.init()
-window = pygame.display.set_mode((windowWidth, windowHeight), pygame.RESIZABLE)
+window = pygame.display.set_mode((windowWidth, windowHeight), pygame.FULLSCREEN)
 pygame.display.set_caption('Gravity Simulator')
 icon = pygame.image.load('icon.jpg')
 pygame.display.set_icon(icon)
 
-#settings window:
+objectScaleSlider = Slider(window, 10, windowHeight - 330, 400, 20, min=1, max=50, step=1, handleColour=(150, 150, 150))
+objectScaleOutput = TextBox(window, 425, windowHeight - 340, 100, 40, fontSize=30)
+objectScaleOutput.disable()
+
+timeScaleSlider = Slider(window, 10, windowHeight - 430, 400, 20, min=1, max=3000000, step=1, handleColour=(150, 150, 150))
+timeScaleOutput = TextBox(window, 425, windowHeight - 440, 100, 40, fontSize=30)
+timeScaleOutput.disable()
+
+yPos = windowHeight - 275
+pauseButton = Button(
+    # Mandatory Parameters
+    window,  # Surface to place button on
+    0,  # X-coordinate of top left corner
+    yPos,  # Y-coordinate of top left corner
+    100,  # Width
+    50,  # Height
+    text='Pause',  # Text to display
+    fontSize=20,  # Size of font
+    margin=5,  # Minimum distance between text/image and edge of button
+    onClick=pauseSimulation  # Function to call when clicked on
+)
+distanceButton = Button(
+    # Mandatory Parameters
+    window,  # Surface to place button on
+    125,  # X-coordinate of top left corner
+    yPos,  # Y-coordinate of top left corner
+    100,  # Width
+    50,  # Height
+    text='Distance Info',  # Text to display
+    fontSize=20,  # Size of font
+    margin=5,  # Minimum distance between text/image and edge of button
+    onClick=toggleDistances  # Function to call when clicked on
+)
+planetInfoButton = Button(
+    # Mandatory Parameters
+    window,  # Surface to place button on
+    250,  # X-coordinate of top left corner
+    yPos,  # Y-coordinate of top left corner
+    100,  # Width
+    50,  # Height
+    text='Planet Info',  # Text to display
+    fontSize=20,  # Size of font
+    margin=5,  # Minimum distance between text/image and edge of button
+    onClick=togglePlanetInfo  # Function to call when clicked on
+)
+keyButton = Button(
+    # Mandatory Parameters
+    window,  # Surface to place button on
+    375,  # X-coordinate of top left corner
+    yPos,  # Y-coordinate of top left corner
+    100,  # Width
+    50,  # Height
+    text='Toggle Key',  # Text to display
+    fontSize=20,  # Size of font
+    margin=5,  # Minimum distance between text/image and edge of button
+    onClick=toggleKey  # Function to call when clicked on
+)
+debugButton = Button(
+    # Mandatory Parameters
+    window,  # Surface to place button on
+    500,  # X-coordinate of top left corner
+    yPos,  # Y-coordinate of top left corner
+    100,  # Width
+    50,  # Height
+    text='Toggle Debug',  # Text to display
+    fontSize=20,  # Size of font
+    margin=5,  # Minimum distance between text/image and edge of button
+    onClick=toggleDebug  # Function to call when clicked on
+)
+
+"""#settings window:
 tkWindow = tk.Tk()
 tkWindow.protocol("WM_DELETE_WINDOW", quit_callback)
 tkWindow.geometry("300x500")
@@ -119,7 +193,7 @@ fpsSliderTitle = ttk.Label(tkWindow, text="Target FPS: ")
 fpsSliderTitle.pack(pady=10)
 fpsSlider = ttk.Scale(tkWindow, from_=5, to=60, command=changeTargetFPS)
 fpsSlider.pack(pady=10)
-fpsSlider.set(25)
+fpsSlider.set(25)"""
 
 def normalizeVector(vector):
     x, y = vector
@@ -271,7 +345,8 @@ def text_to_screen(screen, text, x, y, size=50, color=(200, 000, 000), font_type
 
 def checkEvents():
 	global windowHeight, windowWidth, targetScale, zoomSpeed
-	for event in pygame.event.get():
+	events = pygame.event.get()
+	for event in events:
 		if event.type == pygame.QUIT:
 			exit()
 		elif event.type == pygame.VIDEORESIZE:
@@ -284,6 +359,14 @@ def checkEvents():
 				targetScale *= zoomSpeed
 			elif event.button == 5 and scale > 1:
 				targetScale /= zoomSpeed
+	objectScaleOutput.setText("Scale: " + str(objectScaleSlider.getValue()))
+	timeScaleOutput.setText("Time: " + str(timeScaleSlider.getValue()) + "X")
+
+	changeScale(objectScaleSlider.getValue())
+	changeTimeScale(timeScaleSlider.getValue())
+	
+	pygame_widgets.update(events)
+	pygame.display.update()
 
 def drawAll(scale, xoffset, yoffset, day, year, calculationFrames, timeBetweenDraw, drawFrameCount):
 	global totalPlanets, selectedPlanet, planetScale
@@ -388,7 +471,6 @@ yearCounter = 0
 orbitFramesCounter = 0
 currentFPS = 0
 timeBetweenDraws = 1/targetFPS
-paused = False
 
 #main loop
 while True:
@@ -400,8 +482,7 @@ while True:
 			calculatePhysics(dt * timeScale)
 
 	if time.time() - pastDrawTime >= timeBetweenDraws: #draw everything
-		main_dialog.update()
-		checkEvents() #for resize, close windows, and interaction
+		#main_dialog.update()
 		if time.time() - pastSecond >= 1: #getting fps
 			pastSecond = time.time()
 			currentFPS = drawFrameCount
@@ -424,8 +505,10 @@ while True:
 				dayCounter = 0
 				yearCounter += 1
 		drawAll(scale, xoffset, yoffset, dayCounter, yearCounter, frameCount, timeBetweenDraws, currentFPS)
+		checkEvents() #for resize, close windows, and interaction
 		drawFrameCount += 1
 		frameCount = 0
+
 		pygame.display.flip() #update display
 
 
