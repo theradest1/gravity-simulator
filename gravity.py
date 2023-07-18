@@ -12,6 +12,9 @@ import sys
 planets = []
 black = (0, 0, 0)
 white = (255, 255, 255)
+red = (255, 0, 0)
+blue = (0, 0, 255)
+gray = (150, 150, 150)
 green = (0, 255, 0)
 
 #all data gotten from NASA
@@ -23,12 +26,15 @@ targetYoffset = 0
 
 #settings
 zoomSpeed = 1.4
-timeScale = 250000 #dont go too high (5000000 is max) with this, it becomes unstable (the lower it is, the more physically correct it is)
+timeScale = 250000 #dont go too high with this, it becomes unstable (the lower it is, the more physically correct it is)
 planetScale = 1
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
 targetFPS = 40
 drawDistances = False
+planetInfo = True
+key = True
+debug = True
 scaleEase = 10
 offsetEase = 5
 calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (literally nothing else). zero for no limit
@@ -37,27 +43,83 @@ calculationCycleLimit = 0 #(per frame) for less CPU/processing power needed (lit
 def quit_callback():
 	global Done
 	Done = True
-
 def pauseSimulation(event):
     global paused
     paused = not paused
-
-
+def changeScale(value):
+    global planetScale
+    planetScale = round(float(value))
+def changeTimeScale(value):
+    global timeScale
+    timeScale = round(float(value))
+def changeTargetFPS(value):
+    global timeBetweenDraws
+    timeBetweenDraws = 1/round(float(value))
+def toggleDistances(event):
+    global drawDistances
+    drawDistances = not drawDistances
+def togglePlanetInfo(event):
+    global planetInfo
+    planetInfo = not planetInfo
+def toggleKey(event):
+    global key
+    key = not key
+def toggleDebug(event):
+    global debug
+    debug = not debug
 #pygame initialize
 windowWidth = 800
 windowHeight = 800
 pygame.init()
 window = pygame.display.set_mode((windowWidth, windowHeight), pygame.RESIZABLE)
+pygame.display.set_caption('Gravity Simulator')
+icon = pygame.image.load('icon.jpg')
+pygame.display.set_icon(icon)
 
 #settings window:
 tkWindow = tk.Tk()
 tkWindow.protocol("WM_DELETE_WINDOW", quit_callback)
-main_dialog =  tk.Frame(tkWindow)
+tkWindow.geometry("300x500")
+main_dialog = tk.Frame(tkWindow)
 main_dialog.pack()
 
-button = ttk.Button(tkWindow, text="Pause")
-button.bind("<ButtonPress-1>", pauseSimulation)
-button.pack(pady=10)
+pauseButton = ttk.Button(tkWindow, text="Pause")
+pauseButton.bind("<ButtonPress-1>", pauseSimulation)
+pauseButton.pack(pady=10)
+
+distanceButton = ttk.Button(tkWindow, text="Show Distance info")
+distanceButton.bind("<ButtonPress-1>", toggleDistances)
+distanceButton.pack(pady=10)
+
+planetInfoButton = ttk.Button(tkWindow, text="Show Planet info")
+planetInfoButton.bind("<ButtonPress-1>", togglePlanetInfo)
+planetInfoButton.pack(pady=10)
+
+keyButton = ttk.Button(tkWindow, text="Show Key")
+keyButton.bind("<ButtonPress-1>", toggleKey)
+keyButton.pack(pady=10)
+
+keyButton = ttk.Button(tkWindow, text="Show Simulation Debug")
+keyButton.bind("<ButtonPress-1>", toggleDebug)
+keyButton.pack(pady=10)
+
+scaleSliderTitle = ttk.Label(tkWindow, text="Object Scale: ")
+scaleSliderTitle.pack(pady=10)
+scaleSlider = ttk.Scale(tkWindow, from_=1, to=50, command=changeScale)
+scaleSlider.pack(pady=10)
+scaleSlider.set(1)
+
+speedSliderTitle = ttk.Label(tkWindow, text="Time Scale: ")
+speedSliderTitle.pack(pady=10)
+speedSlider = ttk.Scale(tkWindow, from_=1, to=3000000, command=changeTimeScale)
+speedSlider.pack(pady=10)
+speedSlider.set(800000)
+
+fpsSliderTitle = ttk.Label(tkWindow, text="Target FPS: ")
+fpsSliderTitle.pack(pady=10)
+fpsSlider = ttk.Scale(tkWindow, from_=5, to=60, command=changeTargetFPS)
+fpsSlider.pack(pady=10)
+fpsSlider.set(25)
 
 def normalizeVector(vector):
     x, y = vector
@@ -223,7 +285,7 @@ def checkEvents():
 			elif event.button == 5 and scale > 1:
 				targetScale /= zoomSpeed
 
-def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, drawFrameCount):
+def drawAll(scale, xoffset, yoffset, day, year, calculationFrames, timeBetweenDraw, drawFrameCount):
 	global totalPlanets, selectedPlanet, planetScale
 	window.fill(black)
 	for planet in planets:
@@ -231,32 +293,47 @@ def drawAll(scale, xoffset, yoffset, day, calculationFrames, timeBetweenDraw, dr
 		if planet == selectedPlanet and drawDistances:
 			planet.drawDistances(scale, xoffset, yoffset)
 
-	simulatorInfoStartY = 1
-	sumulatorInfoIncrement = 15
-	text_to_screen(window, "Day: " + str(int(day)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 0, 13)
-	text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 1, 13)
-	#text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
-	#text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
-	if paused:
-		text_to_screen(window, "Cycles/Second: 0", 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
-	else:
-		text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 2, 13)
-	#text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, simulatorInfoStartY + sumulatorInfoIncrement * 3, 13)
+	#debug
+	increment = 18
+	numberOfDebugs = 0
+	debugColor = gray
+	if debug:
+		text_to_screen(window, "Debug:", 1, increment * (numberOfDebugs + 0), 19, debugColor)
+		text_to_screen(window, "Years: " + str(int(year)), 1, increment * (numberOfDebugs + 1), 16, debugColor)
+		text_to_screen(window, "Days: " + str(int(day)), 1, increment * (numberOfDebugs + 2), 16, debugColor)
+		text_to_screen(window, "FPS: " + str(drawFrameCount) + " / " + str(int(1/timeBetweenDraw)), 1, increment * (numberOfDebugs + 3), 16, debugColor)
+		text_to_screen(window, "Cycles/Frame: " + str(calculationFrames), 1, increment * (numberOfDebugs + 4), 16, debugColor)
+		if paused:
+			text_to_screen(window, "Cycles/Second: 0", 1, increment * (numberOfDebugs + 5), 16, debugColor)
+			text_to_screen(window, "Cycles per planet/Frame: 0", 1, increment * (numberOfDebugs + 6), 16, debugColor)
+			text_to_screen(window, "Cycles per planet/Second: 0", 1, increment * (numberOfDebugs + 7), 16, debugColor)
+		else:
+			text_to_screen(window, "Cycles per planet/Frame: " + str(int(calculationFrames/totalPlanets)), 1, increment * (numberOfDebugs + 5), 16, debugColor)
+			text_to_screen(window, "Cycles per planet/Second: " + str(int(calculationFrames * drawFrameCount / totalPlanets)), 1, increment * (numberOfDebugs + 6), 16, debugColor)
+			text_to_screen(window, "Cycles/Second: " + str(int(calculationFrames * drawFrameCount)), 1, increment * (numberOfDebugs + 7), 16, debugColor)
+		numberOfDebugs += 9
 
-	#info
-	planetInfoStartY = 50
-	increment = 17
-	text_to_screen(window, selectedPlanet.name + ":", 1, planetInfoStartY, 20, white)
-	text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ") (m/s)", 1, planetInfoStartY + increment * 1, 16, white)
-	text_to_screen(window, "Speed: " + getScientificNotation(math.pow(math.pow(selectedPlanet.xvel, 2) + math.pow(selectedPlanet.yvel, 2), .5)) + " (m/s)", 1, planetInfoStartY + increment * 2, 16, white)
-	text_to_screen(window, "Mass: " + getScientificNotation(selectedPlanet.mass) + " (Kg)", 1, planetInfoStartY + increment * 3, 16, white)
-	text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, planetInfoStartY + increment * 4, 16, white)
-	text_to_screen(window, "(space) 1 meter = " + getScientificNotation(scale) + " meters", 1, planetInfoStartY + increment * 5, 16, white)
-	text_to_screen(window, "(objects) " + str(planetScale) + "X", 1, planetInfoStartY + increment * 6, 16, white)
-	if paused:
-		text_to_screen(window, "Paused", 1, planetInfoStartY + increment * 7, 16, white)
-	else:
-		text_to_screen(window, "(time) 1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, planetInfoStartY + increment * 7, 16, white)
+	#key
+	keyColor = gray
+	if key:
+		text_to_screen(window, "Key:", 1, increment * (numberOfDebugs + 0), 19, keyColor)
+		text_to_screen(window, "1 meter = " + getScientificNotation(scale) + " meters", 1, increment * (numberOfDebugs + 1), 16, keyColor)
+		text_to_screen(window, "Scale: " + str(planetScale) + "X", 1, increment * (numberOfDebugs + 2), 16, keyColor)
+		if paused:
+			text_to_screen(window, "Paused", 1, increment * (numberOfDebugs + 3), 16, keyColor)
+		else:
+			text_to_screen(window, "1 sec = " + str(getScientificNotation(timeScale)) + " secs", 1, increment * (numberOfDebugs + 3), 16, keyColor)
+		numberOfDebugs += 5
+
+	#planet info
+	planetInfoColor = gray
+	if planetInfo:
+		text_to_screen(window, selectedPlanet.name + ":", 1, increment * (numberOfDebugs + 0), 19, planetInfoColor)
+		text_to_screen(window, "Velocity: (" + getScientificNotation(selectedPlanet.xvel) + ", " + getScientificNotation(selectedPlanet.yvel) + ") (m/s)", 1, increment * (numberOfDebugs + 1), 16, planetInfoColor)
+		text_to_screen(window, "Speed: " + getScientificNotation(math.pow(math.pow(selectedPlanet.xvel, 2) + math.pow(selectedPlanet.yvel, 2), .5)) + " (m/s)", 1, increment * (numberOfDebugs + 2), 16, planetInfoColor)
+		text_to_screen(window, "Mass: " + getScientificNotation(selectedPlanet.mass) + " (Kg)", 1, increment * (numberOfDebugs + 3), 16, planetInfoColor)
+		text_to_screen(window, "Radius: " + getScientificNotation(selectedPlanet.radius) + " (m)", 1, increment * (numberOfDebugs + 4), 16, planetInfoColor)
+	
 
 def calculatePhysics(dt):
 	for planet in planets:
@@ -307,6 +384,7 @@ frameCount = 0
 drawFrameCount = 0
 frameCount = 0
 dayCounter = 0
+yearCounter = 0
 orbitFramesCounter = 0
 currentFPS = 0
 timeBetweenDraws = 1/targetFPS
@@ -342,7 +420,10 @@ while True:
 		pastDrawTime = time.time()
 		if not paused:
 			dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #keeping track of days
-		drawAll(scale, xoffset, yoffset, dayCounter, frameCount, timeBetweenDraws, currentFPS)
+			if dayCounter == 365:
+				dayCounter = 0
+				yearCounter += 1
+		drawAll(scale, xoffset, yoffset, dayCounter, yearCounter, frameCount, timeBetweenDraws, currentFPS)
 		drawFrameCount += 1
 		frameCount = 0
 		pygame.display.flip() #update display
