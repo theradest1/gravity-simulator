@@ -85,66 +85,11 @@ timeScaleOutput = TextBox(window, 425, windowHeight - 390, 175, 40, fontSize=30)
 timeScaleOutput.disable()
 
 yPos = windowHeight - 275
-pauseButton = Button(
-    # Mandatory Parameters
-    window,  # Surface to place button on
-    0,  # X-coordinate of top left corner
-    yPos,  # Y-coordinate of top left corner
-    100,  # Width
-    50,  # Height
-    text='Pause',  # Text to display
-    fontSize=20,  # Size of font
-    margin=5,  # Minimum distance between text/image and edge of button
-    onClick=pauseSimulation  # Function to call when clicked on
-)
-distanceButton = Button(
-    # Mandatory Parameters
-    window,  # Surface to place button on
-    125,  # X-coordinate of top left corner
-    yPos,  # Y-coordinate of top left corner
-    100,  # Width
-    50,  # Height
-    text='Distance Info',  # Text to display
-    fontSize=20,  # Size of font
-    margin=5,  # Minimum distance between text/image and edge of button
-    onClick=toggleDistances  # Function to call when clicked on
-)
-planetInfoButton = Button(
-    # Mandatory Parameters
-    window,  # Surface to place button on
-    250,  # X-coordinate of top left corner
-    yPos,  # Y-coordinate of top left corner
-    100,  # Width
-    50,  # Height
-    text='Planet Info',  # Text to display
-    fontSize=20,  # Size of font
-    margin=5,  # Minimum distance between text/image and edge of button
-    onClick=togglePlanetInfo  # Function to call when clicked on
-)
-keyButton = Button(
-    # Mandatory Parameters
-    window,  # Surface to place button on
-    375,  # X-coordinate of top left corner
-    yPos,  # Y-coordinate of top left corner
-    100,  # Width
-    50,  # Height
-    text='Toggle Key',  # Text to display
-    fontSize=20,  # Size of font
-    margin=5,  # Minimum distance between text/image and edge of button
-    onClick=toggleKey  # Function to call when clicked on
-)
-debugButton = Button(
-    # Mandatory Parameters
-    window,  # Surface to place button on
-    500,  # X-coordinate of top left corner
-    yPos,  # Y-coordinate of top left corner
-    100,  # Width
-    50,  # Height
-    text='Toggle Debug',  # Text to display
-    fontSize=20,  # Size of font
-    margin=5,  # Minimum distance between text/image and edge of button
-    onClick=toggleDebug  # Function to call when clicked on
-)
+pauseButton = Button(window, 0, yPos, 100, 50, text="Pause", fontSize=20, margin=5, onClick=pauseSimulation)
+distanceButton = Button(window, 125, yPos, 100, 50, text="Distance Info", fontSize=20, margin=5, onClick=toggleDistances)
+planetInfoButton = Button(window, 250, yPos, 100, 50, text="Planet Info", fontSize=20, margin=5, onClick=togglePlanetInfo)
+keyButton = Button(window, 375, yPos, 100, 50, text="Toggle Key", fontSize=20, margin=5, onClick=toggleKey)
+debugButton = Button(window, 500, yPos, 100, 50, text="Toggle Debug", fontSize=20, margin=5, onClick=toggleDebug)
 
 def normalizeVector(vector):
     x, y = vector
@@ -191,7 +136,8 @@ class planet:
 	def calculateGravity(self, dt):
 		for planet in planets:
 			if planet != self:
-				accell = planet.preCalculatedForce / (math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2))
+				distSquared = (math.pow(self.xpos - planet.xpos, 2) + math.pow(self.ypos - planet.ypos, 2))
+				accell = planet.preCalculatedForce / distSquared
 				xAccel, yAccel = calculateForceVector(accell, (planet.xpos, planet.ypos), (self.xpos, self.ypos))
 				self.xvel += xAccel * dt
 				self.yvel += yAccel * dt
@@ -424,54 +370,3 @@ while True:
 		frameCount = 0
 
 		pygame.display.flip() #update display
-
-""" double sun dobble
-	{
-		"name": "Sun_1",
-		"mass": 2.8e30,
-		"radius": 6.95e8,
-		"initialXPos": 0,
-		"initialYPos": 0,
-		"initialXVel": 0,
-		"initialYVel": -2.98e4,
-		"color": [255, 150, 0],
-		"relativeTo": "None"
-	},
-	{
-		"name": "Sun_2",
-		"mass": 2.8e30,
-		"radius": 6.95e8,
-		"initialXPos": 1.496e11,
-		"initialYPos": 0,
-		"initialXVel": 0,
-		"initialYVel": 2.98e4,
-		"color": [255, 150, 0],
-		"relativeTo": "None"
-	},
-	{
-		"name": "Earth",
-		"mass": 5.97e24,
-		"radius": 6.378e6,
-		"initialXPos": 0,
-		"initialYPos": 1.496e11,
-		"initialXVel": 3.4e4,
-		"initialYVel": -8e4,
-		"color": [50, 50, 250],
-		"relativeTo": "Sun_2"
-	}
-"""
-
-"""pluto
-	{
-		"name": "Pluto",
-		"mass": 0.013e24,
-		"radius": 1188000,
-		"initialXPos": 0,
-		"initialYPos": 5906.4e9,
-		"initialXVel": 4.7e3,
-		"initialYVel": 0,
-		"color": [150, 150, 150],
-		"relativeTo": "Sun",
-		"light": 0
-	}
-"""
