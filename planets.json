@@ -48,18 +48,6 @@
 		"light": 0
 	},
 	{
-		"name": "Moon",
-		"mass": 0.073e24,
-		"radius": 1737500,
-		"initialXPos": 0,
-		"initialYPos": 384e6,
-		"initialXVel": 1000,
-		"initialYVel": 0,
-		"color": [150, 150, 150],
-		"relativeTo": "Earth",
-		"light": 0
-	},
-	{
 		"name": "Mars",
 		"mass": 0.642e24,
 		"radius": 3396000,
