@@ -33,7 +33,7 @@ timeScale = 250000 #dont go too high with this, it becomes unstable (the lower i
 planetScale = 1
 orbitTraceLength = 0 #0 orbit length for infinite (it does lag if too much)
 timePerOrbitSubdivide = .1 #the more frames per, the more performance (in seconds)
-targetFPS = 40
+targetFPS = 30
 drawDistances = False
 planetInfo = True
 key = True
@@ -71,6 +71,7 @@ def toggleKey():
 def toggleDebug():
     global debug
     debug = not debug
+
 #pygame initialize
 windowWidth = 1920
 windowHeight = 1080
@@ -80,12 +81,13 @@ pygame.display.set_caption('Gravity Simulator')
 icon = pygame.image.load('icon.jpg')
 pygame.display.set_icon(icon)
 
+#settings
 objectScaleSlider = Slider(window, 10, windowHeight - 330, 400, 20, min=1, max=50, step=1, handleColour=(150, 150, 150))
-objectScaleOutput = TextBox(window, 425, windowHeight - 340, 100, 40, fontSize=30)
+objectScaleOutput = TextBox(window, 425, windowHeight - 340, 175, 40, fontSize=30)
 objectScaleOutput.disable()
 
-timeScaleSlider = Slider(window, 10, windowHeight - 430, 400, 20, min=1, max=3000000, step=1, handleColour=(150, 150, 150))
-timeScaleOutput = TextBox(window, 425, windowHeight - 440, 100, 40, fontSize=30)
+timeScaleSlider = Slider(window, 10, windowHeight - 380, 400, 20, min=1, max=3000000, step=1, handleColour=(150, 150, 150))
+timeScaleOutput = TextBox(window, 425, windowHeight - 390, 175, 40, fontSize=30)
 timeScaleOutput.disable()
 
 yPos = windowHeight - 275
@@ -149,51 +151,6 @@ debugButton = Button(
     margin=5,  # Minimum distance between text/image and edge of button
     onClick=toggleDebug  # Function to call when clicked on
 )
-
-"""#settings window:
-tkWindow = tk.Tk()
-tkWindow.protocol("WM_DELETE_WINDOW", quit_callback)
-tkWindow.geometry("300x500")
-main_dialog = tk.Frame(tkWindow)
-main_dialog.pack()
-
-pauseButton = ttk.Button(tkWindow, text="Pause")
-pauseButton.bind("<ButtonPress-1>", pauseSimulation)
-pauseButton.pack(pady=10)
-
-distanceButton = ttk.Button(tkWindow, text="Show Distance info")
-distanceButton.bind("<ButtonPress-1>", toggleDistances)
-distanceButton.pack(pady=10)
-
-planetInfoButton = ttk.Button(tkWindow, text="Show Planet info")
-planetInfoButton.bind("<ButtonPress-1>", togglePlanetInfo)
-planetInfoButton.pack(pady=10)
-
-keyButton = ttk.Button(tkWindow, text="Show Key")
-keyButton.bind("<ButtonPress-1>", toggleKey)
-keyButton.pack(pady=10)
-
-keyButton = ttk.Button(tkWindow, text="Show Simulation Debug")
-keyButton.bind("<ButtonPress-1>", toggleDebug)
-keyButton.pack(pady=10)
-
-scaleSliderTitle = ttk.Label(tkWindow, text="Object Scale: ")
-scaleSliderTitle.pack(pady=10)
-scaleSlider = ttk.Scale(tkWindow, from_=1, to=50, command=changeScale)
-scaleSlider.pack(pady=10)
-scaleSlider.set(1)
-
-speedSliderTitle = ttk.Label(tkWindow, text="Time Scale: ")
-speedSliderTitle.pack(pady=10)
-speedSlider = ttk.Scale(tkWindow, from_=1, to=3000000, command=changeTimeScale)
-speedSlider.pack(pady=10)
-speedSlider.set(800000)
-
-fpsSliderTitle = ttk.Label(tkWindow, text="Target FPS: ")
-fpsSliderTitle.pack(pady=10)
-fpsSlider = ttk.Scale(tkWindow, from_=5, to=60, command=changeTargetFPS)
-fpsSlider.pack(pady=10)
-fpsSlider.set(25)"""
 
 def normalizeVector(vector):
     x, y = vector
@@ -283,16 +240,10 @@ class planet:
 				#self.yvel += yforce/self.mass
 	def draw(self, scale, xoffset, yoffset):
 		global windowHeight, windowWidth, orbitTraceLength, distancePerOrbitSubdivide
+		#print(self.orbitLines)
 		xoffsetPos = clampNum((self.xpos - xoffset)/scale + windowWidth/2, 10000, -10000)
 		yoffsetPos = clampNum((self.ypos - yoffset)/scale + windowHeight/2, 10000, -10000) #clamps are beause the aa draw complains about it
-		planetDrawScale = clampUpper(self.radius/scale*planetScale, 1000)
-		if planetDrawScale > 1:
-			gfxdraw.aacircle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
-			gfxdraw.filled_circle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
-		text_to_screen(window, self.name, xoffsetPos + planetDrawScale, yoffsetPos - 12 - planetDrawScale, clampNum(int(planetDrawScale), 70, 10))
-
-
-		#print(self.orbitLines)
+		
 		pastLinePeice = (0, 0)
 		for linePeice in self.orbitLines:
 			startPos = (((linePeice[0] - xoffset)/scale + windowWidth/2), ((linePeice[1] - yoffset)/scale + windowHeight/2))
@@ -302,6 +253,15 @@ class planet:
 				#gfxdraw.line(window, int(startPos[0]), int(startPos[1]), int(pastLinePeice[0]), int(pastLinePeice[1]), self.color)
 			pastLinePeice = startPos
 		pygame.draw.line(window, self.color, (xoffsetPos, yoffsetPos), pastLinePeice)
+
+		
+		planetDrawScale = clampUpper(self.radius/scale*planetScale, 1000)
+		if planetDrawScale > 1:
+			gfxdraw.aacircle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
+			gfxdraw.filled_circle(window, int(xoffsetPos), int(yoffsetPos), int(planetDrawScale), self.color)
+		text_to_screen(window, self.name, xoffsetPos + planetDrawScale, yoffsetPos - 12 - planetDrawScale, clampNum(int(planetDrawScale), 70, 10))
+
+
 
 		#if self.name == "Earth":
 		#	print((xoffsetPos, yoffsetPos))
@@ -360,7 +320,7 @@ def checkEvents():
 			elif event.button == 5 and scale > 1:
 				targetScale /= zoomSpeed
 	objectScaleOutput.setText("Scale: " + str(objectScaleSlider.getValue()))
-	timeScaleOutput.setText("Time: " + str(timeScaleSlider.getValue()) + "X")
+	timeScaleOutput.setText("Time: " + getScientificNotation(timeScaleSlider.getValue()) + "X")
 
 	changeScale(objectScaleSlider.getValue())
 	changeTimeScale(timeScaleSlider.getValue())
@@ -501,7 +461,7 @@ while True:
 		pastDrawTime = time.time()
 		if not paused:
 			dayCounter += (timeBetweenDraws * timeScale)/(24 * 60 * 60) #keeping track of days
-			if dayCounter == 365:
+			if dayCounter >= 365:
 				dayCounter = 0
 				yearCounter += 1
 		drawAll(scale, xoffset, yoffset, dayCounter, yearCounter, frameCount, timeBetweenDraws, currentFPS)
