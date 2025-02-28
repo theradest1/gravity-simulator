@@ -69,7 +69,7 @@ def toggleDebug():
 
 #pygame initialize
 pygame.init()
-window = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+window = pygame.display.set_mode((0, 0), pygame.RESIZABLE)
 windowWidth = window.get_width()
 windowHeight = window.get_height()
 pygame.display.set_caption('Gravity Simulator')
